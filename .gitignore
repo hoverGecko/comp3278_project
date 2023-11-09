@@ -1,0 +1,5 @@
+data/*
+.idea
+.venv
+labels.pickle
+train.yml
