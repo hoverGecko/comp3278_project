@@ -3,3 +3,5 @@ data/*
 .venv
 labels.pickle
 train.yml
+.vscode
+__pycache__/**/*
