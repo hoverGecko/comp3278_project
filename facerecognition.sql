@@ -42,9 +42,10 @@ CREATE TABLE `Personnel` (
 
 
 CREATE TABLE `Account` (
-  `last_login_date` datetime NOT NULL,
-  `last_login_duration` int(11) NOT NULL,
-  `uid` int(11) NOT NULL,
+  `last_login_date` datetime DEFAULT NULL,
+  `last_login_duration` int(11) DEFAULT NULL,
+  `creation_date` datetime NOT NULL,
+  `uid` int(11) NOT NULL UNIQUE,
   `account_name` varchar(200) NOT NULL,
   PRIMARY KEY (`account_name`),
   FOREIGN KEY (`uid`) REFERENCES `Personnel` (`uid`)

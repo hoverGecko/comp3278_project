@@ -17,11 +17,12 @@ INSERT INTO `Course` (`course_id`, `title`, `code`, `teacher_message`) VALUES
 (2, 'Computer Database', 1112, 'Lorem ipsum');
 
 INSERT INTO `Personnel` (`uid`, `full_name`, `registered_email`, `is_student`) VALUES
-(1, 'john doe', 'abc@abc.abc', b'1'),
-(2, 'jane doe', 'jane@abc.hk', b'0');
+(1, 'john doe', 'abc@abc.abc', b'1'), -- student, has account
+(2, 'jane doe', 'jane@abc.hk', b'0'), -- not student
+(3, 'Smith', 'test@hku.hk', b'1'); -- student, has no account
 
-INSERT INTO `Account` (`last_login_date`, `last_login_duration`, `uid`, `account_name`) VALUES
-('2023-11-18 18:40:54', 15, 1, 'johndoe1');
+INSERT INTO `Account` (`last_login_date`, `last_login_duration`, `creation_date`, `uid`, `account_name`) VALUES
+('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 1, 'johndoe1');
 
 INSERT INTO `CourseClass` (`type`, `start_time`, `end_time`, `venue`, `course_id`, `weekday`) VALUES
 ('lecture', '14:30:00', '15:30:00', 'MWT2', 2, '4');
