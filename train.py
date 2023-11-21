@@ -6,7 +6,7 @@ import pickle
 
 # Train the model with pictures in the ./data directory
 # Generate 2 files: ./train.yml and ./labels.pickle
-def train():
+def train(verbose=False):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     image_dir = os.path.join(BASE_DIR, "data")
 
@@ -26,7 +26,7 @@ def train():
             if file.endswith("png") or file.endswith("jpg"):
                 path = os.path.join(root, file)
                 label = os.path.basename(root).replace("", "").upper()  # name
-                print(label, path)
+                if verbose: print(label, path)
 
                 if label in label_ids:
                     pass
@@ -34,11 +34,11 @@ def train():
                     label_ids[label] = current_id
                     current_id += 1
                 id_ = label_ids[label]
-                print(label_ids)
+                if verbose: print(label_ids)
 
                 pil_image = Image.open(path).convert("L")
                 image_array = np.array(pil_image, "uint8")
-                print(image_array)
+                if verbose: print(image_array)
                 # Using multiscle detection
                 faces = face_cascade.detectMultiScale(image_array, scaleFactor=1.5, minNeighbors=5)
 
