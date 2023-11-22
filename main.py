@@ -4,7 +4,7 @@ import mysql.connector
 import cv2
 import pyttsx3
 import pickle
-from datetime import datetime
+from datetime import datetime,date,timedelta
 import sys
 import PySimpleGUI as sg
 from typing import Optional, Union, List, Tuple, Dict
@@ -21,6 +21,7 @@ FACE_DETECT_TIMEOUT: int = 200
 
 # 1 Create database connection
 myconn = mysql.connector.connect(host="localhost", user="user", database="facerecognition")
+
 date = datetime.utcnow()
 now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
@@ -307,6 +308,52 @@ def face_detection_window() -> Union[str, dict]:
     win.close()
     return "Cannot recognize your face."
 
+#function to update the table value
+def update_ttb(uid:int,start_hour:int ,end_hour:int,date_of_week):
+    weekday=[1,2,3,4,5,6,7]
+
+    times=[]
+    for i in range (start_hour,end_hour+1):
+        times.append("{hour}:30:00".format(hour=i))
+    
+    
+    ttb_values=[[" "for i in range(len(weekday)+1)] for j in range(len(times)+1)] 
+
+    ttb_values[0]=[" ",str(date_of_week[0])[:10],str(date_of_week[1])[:10],str(date_of_week[2])[:10],str(date_of_week[3])[:10],
+                 str(date_of_week[4])[:10],str(date_of_week[5])[:10],str(date_of_week[6])[:10]]
+
+    for i in range (len(times)):
+        ttb_values[i+1][0]= str(times[i])[:-3]
+
+    for i in range (len(weekday)):
+        for j in range (len(times)):
+            find_course="""
+            SElECT C.code,C.title,CC.type,CC.venue,CC.start_time,CC.end_time
+            FROM CourseClass CC,Course C,CourseEnrollment CE
+            WHERE C.course_id=CE.course_id AND CC.course_id=C.course_id 
+            AND CC.weekday=%s AND CC.start_time=%s
+            AND CE.uid =%s
+            """
+            val=(weekday[i],times[j],uid)
+            
+            cursor.execute(find_course,val)
+            result=cursor.fetchall()
+
+            if result:
+                Course_code=str(result[0][0])
+                Course_title=result[0][1]
+                Course_type=result[0][2]
+                venue=result[0][3]
+                start_times=str(result[0][4])
+                end_time=str(result[0][5])
+                output=(Course_code+'-----'+Course_type).center(30)+'\n'+Course_title.center(30)+'\n'+venue.center(30)+'\n'+(start_times+'---'+end_time).center(30)
+                ttb_values[j+1][i+1]=output
+                while (j!=len(times) and end_time>times[j]):
+                    ttb_values[j+1][i+1]=output
+                    j+=1
+    
+    return ttb_values
+
 # window post login
 def main_window(account: dict):
     login_time = time.time()
@@ -326,12 +373,44 @@ def main_window(account: dict):
     print(hello)
     engine.say(hello)
 
+    #get the date of this week starting from monday
+    today=date.today()
+    date_of_week=[today-timedelta(days=today.weekday())]
+    for i in range (1,7):
+        date_of_week.append(date_of_week[0]+timedelta(days=i))
+    
+    #the default hour is 8
+    start_hour=8
+    #the default hour is 18
+    end_hour=18
+    
+
     # GUI
     home_layout = [
         [sg.Text(f"Welcome, {account_name}!", size=20, font=('Any', 18))],
         [sg.Text('Upcoming Lecture:')]
     ]
-    timetable_layout = [[sg.Text('Course Timetable')]]
+
+    #timetable GUI
+    ttb_values=update_ttb(uid,start_hour,end_hour,date_of_week)
+    ttb_heading=['Times','[Monday] ','[Tuesday] ','[Wednesday] ','[Thurday] ',
+                 '[Friday] ','[Saturday] ','[Sunday] ']
+    
+    tbl1=sg.Table(values=ttb_values,headings=ttb_heading,
+                  col_widths=[8,18,18,18,18,18,18,18],
+                  auto_size_columns=False,
+                  display_row_numbers=False,
+                  justification='center',
+                  key="-TimeTable-",
+                  num_rows=12,
+                  row_height=70)
+    
+    timetable_layout = [
+        [sg.Text('Course Timetable'),sg.Button("< previous 7 days"),sg.Text("The week from {0} to {1}".format(str(date_of_week[0])[:10],str(date_of_week[6])[:10]),key="-Week-"),sg.Button("next 7 days >")],
+        [sg.Text('Starting Hour: '),sg.Input("8",key='-Start_Hour-',size=(3,1)),sg.Text('Ending Hour: '),sg.Input("18",key='-End_Hour-',size=(3,1)),sg.Button('Change Time'),sg.Text(" ",key='-Error-')],
+        [tbl1]]
+
+    #main_layout
     main_layout = [
         [sg.TabGroup([[
             sg.Tab('Home', home_layout),
@@ -341,10 +420,11 @@ def main_window(account: dict):
     win = sg.Window(
         f"ICMS - {account_name}", 
         main_layout, 
-        size=(1000, 400), 
+        size=(1300, 600), 
         auto_size_buttons=True, 
         auto_size_text=True
     )
+
     while True:
         event, values = win.read()
         if event is None or event == 'Close':
@@ -359,11 +439,45 @@ def main_window(account: dict):
                 commit=True
             )
             break
+
+        #ttb event handler
+        elif event == 'Change Time':
+            try:
+                start_hour=int(values['-Start_Hour-'])
+                end_hour=int(values['-End_Hour-'])
+                if start_hour in range(0,25) and end_hour in range(0,25):
+                    if int(start_hour)<int(end_hour):
+                        ttb_values=update_ttb(uid,start_hour,end_hour,date_of_week)
+                        win['-TimeTable-'].update(values= ttb_values)
+                        win['-Error-'].update(" ")
+                    else:
+                        win['-Error-'].update("Starting hour must be smaller than Ending hour")
+                else:
+                    win['-Error-'].update("invalid input, Please input number from 0 to 24")
+            except:
+                win['-Error-'].update("Please input [0-24] in both box")
+            
+
+        elif event == "< previous 7 days":
+            for i in range (7):
+                date_of_week[i]=(date_of_week[i]-timedelta(days=7))
+            ttb_values=update_ttb(uid,int(start_hour),int(end_hour),date_of_week)
+            win['-TimeTable-'].update(values= ttb_values)
+            win['-Week-'].update("The week from {0} to {1}".format(str(date_of_week[0])[:10],str(date_of_week[6])[:10]))
+
+        elif event=="next 7 days >":
+            for i in range (7):
+                date_of_week[i]=(date_of_week[i]+timedelta(days=7))
+            ttb_values=update_ttb(uid,int(start_hour),int(end_hour),date_of_week)
+            win['-TimeTable-'].update(values= ttb_values)
+            win['-Week-'].update("The week from {0} to {1}".format(str(date_of_week[0])[:10],str(date_of_week[6])[:10]))
+
     win.close()
     exit()
 
 def main():
     account = welcome_window()
+
     main_window(account)
     cap.release()
     myconn.close()
