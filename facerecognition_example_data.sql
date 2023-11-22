@@ -14,7 +14,7 @@ DELETE FROM `Course`;
 
 INSERT INTO `Course` (`course_id`, `title`, `code`, `teacher_message`) VALUES
 (1, 'Computer Science', 1111, 'Have a nice lecture!'),
-(2, 'Computer Database', 1112, 'Lorem ipsum');
+(2, 'Computer Database Fundamentals', 1112, 'Lorem ipsum');
 
 INSERT INTO `Personnel` (`uid`, `full_name`, `registered_email`, `is_student`) VALUES
 (1, 'john doe', 'abc@abc.abc', b'1'), -- student, has account
