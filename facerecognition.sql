@@ -26,8 +26,9 @@ DROP TABLE IF EXISTS `Course`;
 CREATE TABLE `Course` (
   `course_id` int(11) NOT NULL,
   `title` varchar(100) NOT NULL,
-  `code` int(11) NOT NULL,
-  `teacher_message` varchar(100) NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `teacher_message` varchar(100) DEFAULT NULL,
+  `section` varchar(10) NOT NULL,
   PRIMARY KEY (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
@@ -56,7 +57,7 @@ CREATE TABLE `CourseClass` (
   `type` varchar(200) NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
-  `venue` varchar(200) NOT NULL,
+  `venue` varchar(30) NOT NULL,
   `course_id` int(11) NOT NULL,
   `weekday` enum('1','2','3','4','5','6','7') NOT NULL,
   PRIMARY KEY (`course_id`, `weekday`, `start_time`),
@@ -66,11 +67,12 @@ CREATE TABLE `CourseClass` (
 
 CREATE TABLE `CourseResource` (
   `file_type` varchar(50) NOT NULL,
-  `category` varchar(50) NOT NULL,
+  `category` varchar(100) NOT NULL,
   `link` varchar(200) NOT NULL,
   `title` varchar(200) NOT NULL,
   `course_id` int(11) NOT NULL,
   `due_date` datetime,
+  `creation_date` datetime NOT NULL,
   PRIMARY KEY (`course_id`, `title`),
   FOREIGN KEY (`course_id`) REFERENCES `Course` (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
