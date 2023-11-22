@@ -28,7 +28,8 @@ INSERT INTO `CourseClass` (`type`, `start_time`, `end_time`, `venue`, `course_id
 ('lecture', '14:30:00', '15:30:00', 'MWT2', 2, '4');
 
 INSERT INTO `CourseResource` (`file_type`, `category`, `link`, `title`, `course_id`) VALUES
-('pdf', 'notes', 'www.google.com', 'Computer Database Fundamentals', 2);
+('pdf', 'notes', 'www.google.com', 'Computer Database Fundamentals', 2),
+('zoom', 'zoom', 'https://zoom.us/join', 'Lecture Zoom Link', 2);
 
 INSERT INTO `CourseEnrollment` (`uid`, `course_id`) VALUES
 (1, 1),
