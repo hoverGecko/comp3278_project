@@ -34,7 +34,10 @@ myconn = mysql.connector.connect(host="localhost", user="root", passwd="xxxxx", 
 
 ## Run
 
-### 1. Create Database
+### 1. Face Recognition Function
+File face_capture.py, face.py and train.py are used to collect face data and train a face recognition model. To test validity use test.py.
+
+### 2. Create Database
 ```
 sudo mysql -u root
 (mysql)
@@ -47,7 +50,7 @@ mysql -u user facerecognition < facerecognition.sql
 mysql -u user facerecognition < facerecognition_example_data.sql
 ```
 
-### 2. Run the app
+### 3. Run the app
 ```
 python main.py
 ```
