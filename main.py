@@ -12,7 +12,7 @@ from face_capture import face_capture
 from train import train as train_model
 import textwrap
 import time
-from datetime import datetime
+from course_window import course_window
 
 # Constants
 # Range: 0 - 100
@@ -410,11 +410,39 @@ def main_window(account: dict):
         [sg.Text('Starting Hour: '),sg.Input("8",key='-Start_Hour-',size=(3,1)),sg.Text('Ending Hour: '),sg.Input("18",key='-End_Hour-',size=(3,1)),sg.Button('Change Time'),sg.Text(" ",key='-Error-')],
         [tbl1]]
 
+    #course_info layout
+    find_column="""
+            SElECT C.code, C.title
+            FROM Course C,CourseEnrollment CE
+            WHERE C.course_id=CE.course_id 
+            AND CE.uid = %s
+            """
+    val=(uid,)
+    cursor.execute(find_column,val)
+    result=cursor.fetchall()
+
+    rows = [
+            [sg.Text(cell,key=cell,enable_events=True,size=10) 
+            if i==0 
+            else sg.Text(cell,size=20)
+            for i,cell in enumerate(row)
+            ]
+        for row in result
+    ]
+    
+
+    course_info_layout = [
+        [sg.Text("Enrolled Course: [Click the course code to check the course info] ")],
+        [sg.Col(rows,scrollable= True,vertical_scroll_only=True,size=(1300, 600))]
+    ]
+
+
     #main_layout
     main_layout = [
         [sg.TabGroup([[
             sg.Tab('Home', home_layout),
-            sg.Tab('Course Timetable', timetable_layout)
+            sg.Tab('Course Timetable', timetable_layout),
+            sg.Tab('Course Info',course_info_layout)
         ]])]
     ]
     win = sg.Window(
@@ -472,12 +500,18 @@ def main_window(account: dict):
             win['-TimeTable-'].update(values= ttb_values)
             win['-Week-'].update("The week from {0} to {1}".format(str(date_of_week[0])[:10],str(date_of_week[6])[:10]))
 
+        #click to check course_info
+        else :
+            try:
+                course_window(event)
+            except:
+                print("You have click on the "+event+" Error on creating course_window")
+
     win.close()
     exit()
 
 def main():
     account = welcome_window()
-
     main_window(account)
     cap.release()
     myconn.close()
