@@ -5,3 +5,5 @@ mysql-connector-python
 pyttsx3
 Pillow
 pysimplegui
+py3-tts
+--upgrade wheel
