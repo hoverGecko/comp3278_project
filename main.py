@@ -1,18 +1,20 @@
-import urllib
-import numpy as np
 import mysql.connector
 import cv2
 import pyttsx3
 import pickle
 from datetime import datetime,date,timedelta
-import sys
 import PySimpleGUI as sg
 from typing import Optional, Union, List, Tuple, Dict
 from face_capture import face_capture
 from train import train as train_model
 import textwrap
 import time
-from course_window import course_window
+import tkinter as tk
+import mysql.connector
+import webbrowser
+import smtplib
+from email.message import EmailMessage
+# from course_window import course_window
 
 # Constants
 # Range: 0 - 100
@@ -20,7 +22,7 @@ FACE_DETECT_CONFIDENCE: int = 65
 FACE_DETECT_TIMEOUT: int = 200
 
 # 1 Create database connection
-myconn = mysql.connector.connect(host="localhost", user="root", passwd="xxxxx", database="facerecognition")
+myconn = mysql.connector.connect(host="localhost", user="user", database="facerecognition")
 
 date = datetime.utcnow()
 now = datetime.now()
@@ -369,10 +371,6 @@ def main_window(account: dict):
         commit=True
     )
 
-    hello = ("Hello ", uid, "You did attendance today")
-    print(hello)
-    engine.say(hello)
-
     #get the date of this week starting from monday
     today=date.today()
     date_of_week=[today-timedelta(days=today.weekday())]
@@ -383,13 +381,82 @@ def main_window(account: dict):
     start_hour=8
     #the default hour is 18
     end_hour=18
-    
 
     # GUI
-    home_layout = [
-        [sg.Text(f"Welcome, {account_name}!", size=20, font=('Any', 18))],
-        [sg.Text('Upcoming Lecture:')]
+    home_layout: list = [
+        [sg.Text(f"Welcome, {account_name}!", size=20, font=('Any', 18))]
     ]
+
+    # upcoming course
+    # For testing
+    # current_datetime = datetime(year=2023, month=11, day=20, hour=14)
+    current_datetime = datetime.now()
+    current_weekday = str(current_datetime.weekday() + 1)
+    current_time = current_datetime.time()
+    next_onehour = (current_datetime + timedelta(hours=1)).time()
+
+    upcoming_courses = query(
+        """
+        WITH EnrolledCourse AS (
+            SELECT course_id
+            FROM CourseEnrollment
+            WHERE uid=%s
+        ),
+        UpcomingCourseClass AS (
+            SELECT CourseClass.course_id, CourseClass.type, CourseClass.start_time, CourseClass.end_time
+            FROM CourseClass INNER JOIN EnrolledCourse 
+                ON CourseClass.course_id = EnrolledCourse.course_id
+            WHERE CourseClass.weekday=%s
+                AND CourseClass.start_time > %s
+                AND CourseClass.start_time < %s
+            ORDER BY start_time ASC LIMIT 1
+        )
+        SELECT code, section, title, start_time, end_time, type, UpcomingCourseClass.course_id
+        FROM Course INNER JOIN UpcomingCourseClass
+            ON Course.course_id = UpcomingCourseClass.course_id;
+        """
+        , (uid, current_weekday, current_time, next_onehour)
+    )
+    print('upcoming_courses:', upcoming_courses)
+
+    upcoming_course = None
+    if len(upcoming_courses) != 0:
+        upcoming_course = upcoming_courses[0]
+        home_layout.append([sg.Text(f"You have the following upcoming class:", font=('Any', 12), pad=(5, (0, 10)))])
+        home_layout.append([sg.Text(f"{upcoming_course['code']} - {upcoming_course['section']}", font=('Any', 12))])
+        home_layout.append([sg.Text(upcoming_course['title'], font=('Any', 10))])
+        home_layout.append([sg.Text(f"{upcoming_course['type'].capitalize()} ({upcoming_course['start_time']}-{upcoming_course['end_time']})", font=('Any', 10), pad=(5, (0, 10)))])
+        home_layout.append([sg.Text("Click the button to access the course details:", font=('Any', 10))])
+        home_layout.append([sg.Button("Course Details")])
+    else:
+        home_layout.append([sg.Text('You have no upcoming lecture in the next hour.')])
+    home_layout.append([sg.Text(' ', font=('Any', 2))])
+
+    # upcoming due assignment
+    due_assignments = query(
+        """
+        WITH EnrolledCourseID AS (
+            SELECT course_id
+            FROM CourseEnrollment
+            WHERE uid=%s
+        )
+        SELECT CourseResource.title, due_date, link
+        FROM CourseResource INNER JOIN EnrolledCourseID
+            ON CourseResource.course_id = EnrolledCourseID.course_id
+        WHERE due_date IS NOT NULL
+            AND due_date > %s
+            AND due_date < %s
+        """, (uid, current_datetime, current_datetime + timedelta(days=30))
+    )
+    if len(due_assignments) != 0:
+        home_layout.append([sg.Text('Assignment due in the next 30 days:', font=('Any', 12))])
+        for asm in due_assignments:
+            message = f"{asm['title']} (Due: {asm['due_date'].strftime('%Y-%m-%d %H:%M:%S')})"
+            home_layout.append([
+                sg.Text(message, font=('Any', 10, 'underline'), key=f"_hyperlink: {asm['link']} ", text_color='blue', enable_events=True)
+            ])
+    else:
+        home_layout.append([sg.Text('You have no assignment due in the next 30 days.', font=('Any', 12))])
 
     #timetable GUI
     ttb_values=update_ttb(uid,start_hour,end_hour,date_of_week)
@@ -468,6 +535,9 @@ def main_window(account: dict):
             )
             break
 
+        elif event == 'Course Details' and upcoming_course is not None:
+            course_window(upcoming_course['course_id'], uid)
+
         #ttb event handler
         elif event == 'Change Time':
             try:
@@ -503,15 +573,150 @@ def main_window(account: dict):
         #click to check course_info
         else :
             try:
-                course_window(event)
+                course_window(event, uid)
             except:
                 print("You have click on the "+event+" Error on creating course_window")
 
     win.close()
     exit()
 
+def course_window(course_id, my_uid):
+    student_email = query(
+        """
+        SELECT registered_email
+        FROM Personnel
+        WHERE uid = %s
+        """, (my_uid, )
+    )[0]['registered_email']
+    course = query(
+        """
+        SELECT *
+        FROM Course
+        WHERE course_id=%s
+        """, (course_id,)
+    )[0]
+    course_resource_list = query(
+        """
+        SELECT *
+        FROM CourseResource
+        WHERE course_id=%s
+        ORDER BY creation_date
+        """, (course_id, )
+    )
+    course_teacher_list = query(
+        """
+        WITH Teacher AS (
+            SELECT uid, role
+            FROM CourseTeacher
+            WHERE course_id=%s
+        )
+        SELECT full_name, role, registered_email
+        FROM Teacher INNER JOIN Personnel
+            ON Teacher.uid = Personnel.uid
+        """, (course_id, )
+    )
+
+    course_teacher_by_role: dict[str, list[tuple[str, str]]] = {}
+    for teacher in course_teacher_list:
+        role = list(teacher['role'])[0].capitalize()
+        if role not in course_teacher_by_role:
+            course_teacher_by_role[role] = []
+        course_teacher_by_role[role].append((teacher['full_name'], teacher['registered_email']))
+
+    course_resource_by_category: dict[str, list[dict]] = {}
+    for res in course_resource_list:
+        cat = res['category']
+        if cat not in course_resource_by_category:
+            course_resource_by_category[cat] = []
+        course_resource_by_category[cat].append(res)
+    
+    teacher_layout = []
+    for role, teacher_t in course_teacher_by_role.items():
+        teacher_layout.append([sg.Text(f"{role}: ", font=('Any', 10))])
+        for name, email in teacher_t:
+            teacher_layout[-1].append(sg.Text(f"{name}", font=('Any', 10, 'underline'), key=f"_hyperlink: mailto:{email} ", text_color='blue', enable_events=True))
+
+    resource_layout = []
+    for cat, res_list in course_resource_by_category.items():
+        resource_layout.append([sg.Text(cat, font=('Any', 14))])
+        for res in res_list:
+            message = f"{res['title']}"
+            if 'due_date' in res and res['due_date']:
+                message += f" (Due: {res['due_date'].strftime('%Y-%m-%d %H:%M:%S')})"
+            resource_layout.append([
+                sg.Text('-', font=('Any', 12)), 
+                sg.Text(message, font=('Any', 12, 'underline'), key=f"_hyperlink: {res['link']} ", text_color='blue', enable_events=True)
+            ])
+        resource_layout.append([sg.Text(" ", font=('Any', 2))])
+
+    layout = [
+        [sg.Text(f"{course['code']} - {course['section']}", font=('Any', 18))],
+        [sg.Text(f"{course['title']}", font=('Any', 16), pad=(5, (0, 10)))],
+        *teacher_layout,
+        [sg.Text(" ", font=('Any', 2))],
+        [sg.Text(f"Course Resources:", font=('Any', 16))],
+        *resource_layout,
+        [sg.Text("Send course details to email:")],
+        [sg.Input(student_email if student_email else '', key="EMAIL", size=(30, 1))],
+        [sg.Button("Send")],
+        [sg.Text("", font=('Any', 10), key="EMAIL_MESSAGE")]
+    ]
+    win = sg.Window(f"ICMS - Course details - {course['code']}", layout, auto_size_buttons=True, auto_size_text=True, size=(1000, 800))
+    while True:
+        event, values = win.read()
+        if event == "Close" or event is None:
+            win.close()
+            return
+        elif event == 'Send':
+            if len(values["EMAIL"]) == 0:
+                win["EMAIL_MESSAGE"].update("The email field must not be empty.", text_color='red')
+            else:
+                try:
+                    send_email(values["EMAIL"])
+                    win["EMAIL_MESSAGE"].update("Successfully sent email", text_color='green')
+                except Exception as e:
+                    win["EMAIL_MESSAGE"].update("Error when trying to send email.", text_color='red')
+                    print('Send email error: ', e)
+        elif event.startswith('_hyperlink: '):
+            webbrowser.open(event.split(' ')[1])
+
+                    
+
+def send_email():
+    subject = "Course Details"
+    message = f'''
+        Course Code: {detail["course_code"]}\n\
+        Course Name: {detail["course_name"]}\n\
+        Course Venue: {detail["course_venue"]}\n\
+        Teacher Message{detail["teacher_message"]}\n
+    '''
+    for n in notes_link:
+        message += n[3] + ': ' + n[2] + '\n'
+    for z in zoom_link:
+        message += z[3] + ': ' + z[2] + '\n'
+
+    FROM_EMAIL = "comptemp66@gmail.com" 
+    PASSWORD = "ecsp jndp mpbm tqzf"  
+
+    msg = EmailMessage()
+    msg.set_content(message)
+    msg['Subject'] = subject 
+    msg['From'] = FROM_EMAIL
+    msg['To'] = email
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(FROM_EMAIL, PASSWORD)
+            smtp.send_message(msg)
+    except Exception as e:
+        print("Error:", e)
+
 def main():
     account = welcome_window()
+
+    # For testing
+    # main_window({'uid': 3, 'account_name': 'Smith'})
+
     main_window(account)
     cap.release()
     myconn.close()
