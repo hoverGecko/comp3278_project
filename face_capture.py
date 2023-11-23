@@ -8,8 +8,10 @@ import sys
 def face_capture(user_name = "Jack", num_imgs = 400, video_capture = None):
     faceCascade = cv2.CascadeClassifier('haarcascade/haarcascade_frontalface_default.xml')
 
+    new_capture = False
     if video_capture is None:
         video_capture = cv2.VideoCapture(-1)
+        new_capture = True
 
     if not os.path.exists('data/{}'.format(user_name)):
         os.mkdir('data/{}'.format(user_name))
@@ -57,7 +59,7 @@ def face_capture(user_name = "Jack", num_imgs = 400, video_capture = None):
         key = cv2.waitKey(100)
 
     # When everything is done, release the capture
-    video_capture.release()
+    if new_capture == True: video_capture.release()
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":

@@ -388,9 +388,9 @@ def main_window(account: dict):
     ]
 
     # upcoming course
+    current_datetime = datetime.now()
     # For testing
     # current_datetime = datetime(year=2023, month=11, day=20, hour=14)
-    current_datetime = datetime.now()
     current_weekday = str(current_datetime.weekday() + 1)
     current_time = current_datetime.time()
     next_onehour = (current_datetime + timedelta(hours=1)).time()
@@ -739,9 +739,9 @@ def main():
     account = welcome_window()
 
     # For testing
-    # main_window({'uid': 3, 'account_name': 'Smith'})
+    main_window({'uid': 3, 'account_name': 'Smith'})
 
-    main_window(account)
+    # main_window(account)
     cap.release()
     myconn.close()
 
