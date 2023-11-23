@@ -17,8 +17,6 @@ from email.message import EmailMessage
 # from course_window import course_window
 
 # Constants
-# Range: 0 - 100
-face_detect_confidence: int = 25
 FACE_DETECT_TIMEOUT: int = 200
 
 # 1 Create database connection
@@ -92,13 +90,15 @@ def query(query_str: str, query_params: Optional[Union[dict, tuple]] = None, com
 # When called, shows the welcome window
 # Return the account dict if sign in is successful
 def welcome_window() -> dict:
+    # Range: 0 - 100
+    face_detect_confidence: int = 60
     # Initial welcome screen
     layout =  [
         [sg.Text('Welcome!', font=('Any', 18))],
         [sg.Text("Please sign in or sign up via face capture.", size=50, font=('Any', 10))],
         # for showing if sign up is successful or not
         [sg.Text("", key="MESSAGE", font=('Any', 8), text_color='black')],
-        [sg.Text('Confidence'), sg.Slider(range=(0,100),orientation='h', resolution=1, default_value=60, size=(15,15), key='confidence')],
+        [sg.Text('Confidence'), sg.Slider(range=(0,100),orientation='h', enable_events=True, resolution=1, default_value=60, size=(15,15), key='confidence')],
         [sg.Text("", key="MESSAGE", font=('Any', 8), text_color='black')],
         [sg.Button("Sign in"), sg.Button(button_text="Sign up")]
     ]
@@ -112,15 +112,16 @@ def welcome_window() -> dict:
             size=(500, 250))
     while True:
         event, values = win.Read()
-        face_detect_confidence = values['confidence']
         if event is None or event =='Cancel':
             win.close()
             exit()
+        elif event == 'confidence':
+            face_detect_confidence = values["confidence"]
         elif event == "Sign in":
             if not is_labels_loaded or not is_recognizer_loaded:
                 win["MESSAGE"].update(f"Face recognition has not been set up yet. Please create an account.", text_color='red')
                 continue
-            face_detection_result = face_detection_window()
+            face_detection_result = face_detection_window(face_detect_confidence)
             if type(face_detection_result) == str:
                 win["MESSAGE"].update(f"Sign in failed: {face_detection_result}", text_color='red')
             elif type(face_detection_result) == dict:
@@ -241,7 +242,7 @@ def sign_up_window():
 # Try to open a window and capture user's face to get the user's identity
 # If capturing failed, returns failed reason as str
 # If capturing is successful, returns account dict
-def face_detection_window() -> Union[str, dict]:
+def face_detection_window(face_detect_confidence) -> Union[str, dict]:
     win = None
     # 4 Open the camera and start face recognition
     for _ in range(FACE_DETECT_TIMEOUT):
