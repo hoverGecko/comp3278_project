@@ -18,7 +18,7 @@ from email.message import EmailMessage
 
 # Constants
 # Range: 0 - 100
-FACE_DETECT_CONFIDENCE: int = 65
+face_detect_confidence: int = 25
 FACE_DETECT_TIMEOUT: int = 200
 
 # 1 Create database connection
@@ -98,7 +98,10 @@ def welcome_window() -> dict:
         [sg.Text("Please sign in or sign up via face capture.", size=50, font=('Any', 10))],
         # for showing if sign up is successful or not
         [sg.Text("", key="MESSAGE", font=('Any', 8), text_color='black')],
-        [sg.Button("Sign in"), sg.Button(button_text="Sign up")]]
+        [sg.Text('Confidence'), sg.Slider(range=(0,100),orientation='h', resolution=1, default_value=60, size=(15,15), key='confidence')],
+        [sg.Text("", key="MESSAGE", font=('Any', 8), text_color='black')],
+        [sg.Button("Sign in"), sg.Button(button_text="Sign up")]
+    ]
     win = sg.Window('Attendance System - Sign in',
             default_element_size=(21,1),
             text_justification='c',
@@ -106,9 +109,10 @@ def welcome_window() -> dict:
             auto_size_text=True,
             layout=layout,
             auto_size_buttons=True,
-            size=(500, 180))
+            size=(500, 250))
     while True:
         event, values = win.Read()
+        face_detect_confidence = values['confidence']
         if event is None or event =='Cancel':
             win.close()
             exit()
@@ -255,9 +259,9 @@ def face_detection_window() -> Union[str, dict]:
             id_, conf = recognizer.predict(roi_gray)
 
             # If the face is recognized
-            if conf >= FACE_DETECT_CONFIDENCE:
-                # print(id_)
-                # print(labels[id_])
+            if conf >= face_detect_confidence:
+                print(id_)
+                print(labels[id_])
                 font = cv2.QT_FONT_NORMAL
                 id = 0
                 id += 1
@@ -304,8 +308,8 @@ def face_detection_window() -> Union[str, dict]:
         else:
             image_elem.Update(data=imgbytes)
         event, values = win.Read(timeout=20)
-        if event is None:
-            win.close()
+        if event is None or event == "close":
+            # win.close()
             break
     win.close()
     return "Cannot recognize your face."
@@ -739,9 +743,9 @@ def main():
     account = welcome_window()
 
     # For testing
-    main_window({'uid': 3, 'account_name': 'Smith'})
+    # main_window({'uid': 3, 'account_name': 'Smith'})
 
-    # main_window(account)
+    main_window(account)
     cap.release()
     myconn.close()
 

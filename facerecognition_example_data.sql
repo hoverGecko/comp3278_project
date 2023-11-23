@@ -21,10 +21,12 @@ INSERT INTO `Personnel` (`uid`, `full_name`, `registered_email`, `is_student`) V
 (1, 'John Doe', 'abc@abc.abc', b'1'), -- student, has account
 (2, 'Jane Doe', 'jane@abc.hk', b'0'), -- not student
 (3, 'Smith', 'smith@hku.hk', b'1'), -- student, has no account
-(4, 'Alice', 'alice@hku.hk', b'0'); -- not student
+(4, 'Alice', 'alice@hku.hk', b'0'), -- not student
+(5, 'Jack', 'jack@hku.hk', b'0'); -- student
 
 INSERT INTO `Account` (`last_login_date`, `last_login_duration`, `creation_date`, `uid`, `account_name`) VALUES
-('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 1, 'johndoe1');
+('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 1, 'johndoe1'),
+('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 5, 'Jack');
 -- ('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 3, 'Smith'); -- for testing
 
 INSERT INTO `CourseClass` (`type`, `start_time`, `end_time`, `venue`, `course_id`, `weekday`) VALUES

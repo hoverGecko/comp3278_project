@@ -6,7 +6,7 @@ import pickle
 
 # Train the model with pictures in the ./data directory
 # Generate 2 files: ./train.yml and ./labels.pickle
-def train(verbose=False):
+def train(verbose=True):
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     image_dir = os.path.join(BASE_DIR, "data")
 
