@@ -20,7 +20,7 @@ FACE_DETECT_CONFIDENCE: int = 65
 FACE_DETECT_TIMEOUT: int = 200
 
 # 1 Create database connection
-myconn = mysql.connector.connect(host="localhost", user="user", database="facerecognition")
+myconn = mysql.connector.connect(host="localhost", user="root", passwd="xxxxx", database="facerecognition")
 
 date = datetime.utcnow()
 now = datetime.now()
