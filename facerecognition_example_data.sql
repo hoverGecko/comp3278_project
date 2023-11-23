@@ -24,8 +24,8 @@ INSERT INTO `Personnel` (`uid`, `full_name`, `registered_email`, `is_student`) V
 (4, 'Alice', 'alice@hku.hk', b'0'); -- not student
 
 INSERT INTO `Account` (`last_login_date`, `last_login_duration`, `creation_date`, `uid`, `account_name`) VALUES
-('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 1, 'johndoe1'),
-('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 3, 'Smith');
+('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 1, 'johndoe1');
+-- ('2023-11-18 18:40:54', 15, '2023-11-18 18:00:00', 3, 'Smith'); -- for testing
 
 INSERT INTO `CourseClass` (`type`, `start_time`, `end_time`, `venue`, `course_id`, `weekday`) VALUES
 ('lecture', '14:30:00', '15:30:00', 'MWT2', 1, '1'),
@@ -41,18 +41,18 @@ INSERT INTO `CourseResource` (`file_type`, `category`, `link`, `title`, `course_
 ('zoom', 'Zoom', 'https://zoom.us/join', 'Lecture Zoom Link', 1, NULL, '2023-11-01 18:00:00'),
 ('zoom', 'Zoom', 'https://zoom.us/join', 'Lecture Zoom Link', 2, NULL, '2023-11-01 18:00:00'),
 ('zoom', 'Zoom', 'https://zoom.us/join', 'Lecture Zoom Link', 3, NULL, '2023-11-01 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 1 - Course Introduction', 2, NULL, '2023-11-02 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 2 - ER Diagram', 2, NULL, '2023-11-03 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 3 - ER design', 2, NULL, '2023-11-04 18:00:00'),
-('pdf', 'Tutorial notes', 'www.google.com', 'Tutorial 1 - MySQL', 2, NULL, '2023-11-05 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/Database', 'Lecture 1 - Course Introduction', 2, NULL, '2023-11-02 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/Entity–relationship_model', 'Lecture 2 - ER Diagram', 2, NULL, '2023-11-03 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/Relational_database', 'Lecture 3 - ER design', 2, NULL, '2023-11-04 18:00:00'),
+('pdf', 'Tutorial notes', 'www.youtube.com', 'Tutorial 1 - MySQL', 2, NULL, '2023-11-05 18:00:00'),
 ('pdf', 'Assignment', 'www.google.com', 'A1 - ER Diagram', 2, '2023-12-01 23:59:59', '2023-11-06 18:00:00'),
-('pdf', 'Assignment', 'www.google.com', 'A2 - SQL', 2, '2023-12-20 23:59:59', '2023-11-07 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 1', 1, NULL, '2023-11-02 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 2', 1, NULL, '2023-11-03 18:00:00'),
-('pdf', 'Lecture slides', 'www.google.com', 'Lecture 3 - ER design', 1, NULL, '2023-11-04 18:00:00'),
-('pdf', 'Assignment', 'www.google.com', 'A1 - Introduction to Python', 1, '2023-12-02 23:59:59', '2023-11-10 18:00:00'),
-('pdf', 'Course Information', 'www.google.com', 'Course Introduction', 3, NULL, '2023-11-02 18:00:00'),
-('pdf', 'Assignment', 'www.google.com', 'A1 - Limits', 3, '2023-12-03 23:59:59', '2023-11-03 18:00:00');
+('pdf', 'Assignment', 'en.wikipedia.org/wiki/sql', 'A2 - SQL', 2, '2023-12-20 23:59:59', '2023-11-07 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/computer', 'Lecture 1', 1, NULL, '2023-11-02 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/computer_science', 'Lecture 2', 1, NULL, '2023-11-03 18:00:00'),
+('pdf', 'Lecture slides', 'en.wikipedia.org/wiki/algorithm', 'Lecture 3', 1, NULL, '2023-11-04 18:00:00'),
+('pdf', 'Assignment', 'www.python.org', 'A1 - Introduction to Python', 1, '2023-12-02 23:59:59', '2023-11-10 18:00:00'),
+('pdf', 'Course Information', 'en.wikipedia.org/wiki/Mathematics', 'Course Introduction', 3, NULL, '2023-11-02 18:00:00'),
+('pdf', 'Assignment', 'en.wikipedia.org/wiki/Limit', 'A1 - Limits', 3, '2023-12-03 23:59:59', '2023-11-03 18:00:00');
 
 INSERT INTO `CourseEnrollment` (`uid`, `course_id`) VALUES
 (1, 1),

@@ -348,7 +348,7 @@ def update_ttb(uid:int,start_hour:int ,end_hour:int,date_of_week):
                 venue=result[0][3]
                 start_times=str(result[0][4])
                 end_time=str(result[0][5])
-                output=(Course_code+'-----'+Course_type).center(30)+'\n'+Course_title.center(30)+'\n'+venue.center(30)+'\n'+(start_times+'---'+end_time).center(30)
+                output=(Course_code+'---'+Course_type.capitalize()).center(30)+'\n'+Course_title.center(30)+'\n'+venue.center(30)+'\n'+(start_times+'-'+end_time).center(30)
                 ttb_values[j+1][i+1]=output
                 while (j!=len(times) and end_time>times[j]):
                     ttb_values[j+1][i+1]=output
@@ -423,10 +423,9 @@ def main_window(account: dict):
     if len(upcoming_courses) != 0:
         upcoming_course = upcoming_courses[0]
         home_layout.append([sg.Text(f"You have the following upcoming class:", font=('Any', 12), pad=(5, (0, 10)))])
-        home_layout.append([sg.Text(f"{upcoming_course['code']} - {upcoming_course['section']}", font=('Any', 12))])
-        home_layout.append([sg.Text(upcoming_course['title'], font=('Any', 10))])
+        home_layout.append([sg.Text(f"{upcoming_course['code']} - {upcoming_course['section']}  {upcoming_course['title']}", key=f"_course_id: {upcoming_course['course_id']} ", enable_events=True, font=('Any', 12, 'underline'), text_color='blue')])
         home_layout.append([sg.Text(f"{upcoming_course['type'].capitalize()} ({upcoming_course['start_time']}-{upcoming_course['end_time']})", font=('Any', 10), pad=(5, (0, 10)))])
-        home_layout.append([sg.Text("Click the button to access the course details:", font=('Any', 10))])
+        home_layout.append([sg.Text("Click the button or the course to access the course details:", font=('Any', 10))])
         home_layout.append([sg.Button("Course Details")])
     else:
         home_layout.append([sg.Text('You have no upcoming lecture in the next hour.')])
@@ -467,6 +466,7 @@ def main_window(account: dict):
                   col_widths=[8,18,18,18,18,18,18,18],
                   auto_size_columns=False,
                   display_row_numbers=False,
+                  enable_events=True,
                   justification='center',
                   key="-TimeTable-",
                   num_rows=12,
@@ -487,22 +487,31 @@ def main_window(account: dict):
     val=(uid,)
     cursor.execute(find_column,val)
     result=cursor.fetchall()
+    enrolledCourses = query(
+        """
+        SELECT C.course_id,C.code,C.section, C.title
+        FROM Course C,CourseEnrollment CE
+        WHERE C.course_id=CE.course_id 
+            AND CE.uid = %s
+        ORDER BY C.code
+        """, (uid, )
+    )
 
-    key=[row[0] for row in result]
+    key=[row['course_id'] for row in enrolledCourses]
     rows = [
-            [sg.Text("{0}.".format(j+1),size=1)
-            if i==0 
-            else sg.Text(cell,key=key[j],enable_events=True,size=10) 
-            if i==1
-            else sg.Text(cell,size=20)
-            for i,cell in enumerate(row)
-            ]
-        for j,row in enumerate(result)
+        [sg.Text(
+            f"{course['code']} - {course['section']}  {course['title']}", 
+            key=f"_course_id: {course['course_id']} ", 
+            enable_events=True, 
+            font=('Any', 10, 'underline'), 
+            text_color='blue'
+        )] for course in enrolledCourses
     ]
+    print('enrolledCourses: ', enrolledCourses)
     
 
     course_info_layout = [
-        [sg.Text("Enrolled Course: [Click the course code to check the course info] ")],
+        [sg.Text("Enrolled Course (Click the course code to check the course info): ", font=('Any', 14))],
         [sg.Col(rows,scrollable= True,vertical_scroll_only=True,size=(1300, 600))]
     ]
 
@@ -512,7 +521,7 @@ def main_window(account: dict):
         [sg.TabGroup([[
             sg.Tab('Home', home_layout),
             sg.Tab('Course Timetable', timetable_layout),
-            sg.Tab('Course Info',course_info_layout)
+            sg.Tab('Enrolled Courses',course_info_layout)
         ]])]
     ]
     win = sg.Window(
@@ -525,6 +534,7 @@ def main_window(account: dict):
 
     while True:
         event, values = win.read()
+        # print('event: ', event)
         if event is None or event == 'Close':
             # write the login duration
             query(
@@ -574,11 +584,14 @@ def main_window(account: dict):
             win['-Week-'].update("The week from {0} to {1}".format(str(date_of_week[0])[:10],str(date_of_week[6])[:10]))
 
         #click to check course_info
-        else :
+        elif event.startswith('_course_id:') :
             try:
-                course_window(event, uid)
+                course_window(int(event.split(' ')[1]), uid)
             except:
                 print("Course_id is "+str(event)+" Error on creating course_window")
+        
+        elif event.startswith('_hyperlink: '):
+            webbrowser.open(event.split(' ')[1])
 
     win.close()
     exit()
@@ -665,6 +678,45 @@ def course_window(course_id, my_uid):
         [sg.Text("", font=('Any', 10), key="EMAIL_MESSAGE")]
     ]
     win = sg.Window(f"ICMS - Course details - {course['code']}", layout, auto_size_buttons=True, auto_size_text=True, size=(1000, 800))
+
+    # send_email closure
+    def send_email(email):
+        subject = f"{course['code']} - Course Details"
+        teacher_list_str = '\n'.join([f"{role}: {', '.join([name for name, _ in teacher_list])}" for role, teacher_list in course_teacher_by_role.items()])
+        def course_res_to_str(res) -> str:
+            message = f"{res['title']} \nLink: {res['link']} \n"
+            if 'due_date' in res and res['due_date']:
+                message += f"Due date: {res['due_date'].strftime('%Y-%m-%d %H:%M:%S')}\n"
+            return message + '\n'
+        resource_list_str = '\n'.join([f"{cat}: \n{''.join([course_res_to_str(res) for res in resources])}" for cat, resources in course_resource_by_category.items()])
+        message = textwrap.dedent(f'''
+{course['code']} - {course['section']}  {course['title']}
+{teacher_list_str}
+
+Teacher's Message:
+{course['teacher_message']}
+
+Course resources:
+
+{resource_list_str}
+        ''')
+
+        FROM_EMAIL = "comptemp66@gmail.com" 
+        PASSWORD = "ecsp jndp mpbm tqzf"  
+
+        msg = EmailMessage()
+        msg.set_content(message)
+        msg['Subject'] = subject 
+        msg['From'] = FROM_EMAIL
+        msg['To'] = email
+
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                smtp.login(FROM_EMAIL, PASSWORD)
+                smtp.send_message(msg)
+        except Exception as e:
+            print("Error:", e)
+
     while True:
         event, values = win.read()
         if event == "Close" or event is None:
@@ -682,37 +734,6 @@ def course_window(course_id, my_uid):
                     print('Send email error: ', e)
         elif event.startswith('_hyperlink: '):
             webbrowser.open(event.split(' ')[1])
-
-                    
-
-def send_email():
-    subject = "Course Details"
-    message = f'''
-        Course Code: {detail["course_code"]}\n\
-        Course Name: {detail["course_name"]}\n\
-        Course Venue: {detail["course_venue"]}\n\
-        Teacher Message{detail["teacher_message"]}\n
-    '''
-    for n in notes_link:
-        message += n[3] + ': ' + n[2] + '\n'
-    for z in zoom_link:
-        message += z[3] + ': ' + z[2] + '\n'
-
-    FROM_EMAIL = "comptemp66@gmail.com" 
-    PASSWORD = "ecsp jndp mpbm tqzf"  
-
-    msg = EmailMessage()
-    msg.set_content(message)
-    msg['Subject'] = subject 
-    msg['From'] = FROM_EMAIL
-    msg['To'] = email
-
-    try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(FROM_EMAIL, PASSWORD)
-            smtp.send_message(msg)
-    except Exception as e:
-        print("Error:", e)
 
 def main():
     account = welcome_window()
