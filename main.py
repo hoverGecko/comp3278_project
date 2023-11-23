@@ -412,7 +412,7 @@ def main_window(account: dict):
 
     #course_info layout
     find_column="""
-            SElECT C.code, C.title
+            SElECT C.course_id,C.code,C.section, C.title
             FROM Course C,CourseEnrollment CE
             WHERE C.course_id=CE.course_id 
             AND CE.uid = %s
@@ -421,13 +421,16 @@ def main_window(account: dict):
     cursor.execute(find_column,val)
     result=cursor.fetchall()
 
+    key=[row[0] for row in result]
     rows = [
-            [sg.Text(cell,key=cell,enable_events=True,size=10) 
+            [sg.Text("{0}.".format(j+1),size=1)
             if i==0 
+            else sg.Text(cell,key=key[j],enable_events=True,size=10) 
+            if i==1
             else sg.Text(cell,size=20)
             for i,cell in enumerate(row)
             ]
-        for row in result
+        for j,row in enumerate(result)
     ]
     
 
@@ -505,7 +508,7 @@ def main_window(account: dict):
             try:
                 course_window(event)
             except:
-                print("You have click on the "+event+" Error on creating course_window")
+                print("Course_id is "+str(event)+" Error on creating course_window")
 
     win.close()
     exit()
