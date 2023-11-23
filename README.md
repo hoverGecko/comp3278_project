@@ -39,7 +39,8 @@ File face_capture.py, face.py and train.py are used to collect face data and tra
 
 ### 2. Create Database
 ```
-sudo mysql -u root
+(bash)
+mysql -u root -p
 (mysql)
 CREATE DATABASE facerecognition;
 CREATE USER 'user'@'localhost';
