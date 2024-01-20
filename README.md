@@ -1,6 +1,11 @@
-# Face Recognition
+# Course Management System
 
-Face recognition using python and mysql.
+Project of COMP3278. \
+A course management system that allows students to register and login through facial recognition (face recognition code provided) and check course details such as a course timetable, course teachers and course materials including lecture notes and upcoming assignment due dates. \
+Python (PySimpleGUI) and MySQL are used to create the app.
+
+### Video Demo
+[COMP3278 Group 32 Demo Recording.webm](https://github.com/hoverGecko/comp3278_project/assets/46785140/4667cb2e-970e-4216-8de9-27da145ded25)
 
 *******
 
